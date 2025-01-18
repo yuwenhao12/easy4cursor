@@ -1,2 +1,29 @@
 # easy4cursor
-A software for unlimited reset cursor free trial
+通过临时邮箱+重置cursor本地机器码的方式，实现无限试用pro权限。
+
+
+
+## 普通情况，更换账号
+
+第一步，复制邮箱，然后点击继续
+
+![image-20250118105918048](image\image-20250118105918048.png)
+
+第二步，点击使用邮箱验证
+
+![image-20250118111055673](image\image-20250118111055673.png)
+
+第三步，填写验证码，完成注册。
+
+![image-20250118111146603](image\image-20250118111146603.png)
+
+
+
+## 免费账号使用限制，重置机器码
+
+目前每台机器限制3个免费账号，可以通过修改机器码的情况绕过这个验证。
+
+重置机器码时，需要先关闭cursor，否则不生效。
+
+![image-20250118111523699](E:\Python\Project\easy4cursor\image\image-20250118111523699.png)
+
