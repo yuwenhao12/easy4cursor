@@ -1,7 +1,7 @@
 # easy4cursor
 通过临时邮箱+重置cursor本地机器码的方式，实现无限试用pro权限。
 
-
+下载安装程序：https://github.com/yuwenhao12/easy4cursor/releases
 
 ## 普通情况，更换账号
 
