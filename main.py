@@ -8,6 +8,7 @@ import re
 class TempMailApp:
     def __init__(self, root):
         self.root = root
+        self.current_email_prefix = None  # 添加变量存储当前邮箱前缀
         self.root.title("Cursor重置工具")
         self.root.geometry("900x600")  # 增加窗口尺寸
         
@@ -83,7 +84,7 @@ class TempMailApp:
             width=button_width,
             height=button_height,
             font=button_font,
-            command=self.reset_machine
+            command=lambda: __import__('ResetMachineCode').reset_machine_code()
         )
         self.reset_btn.pack(side="left", padx=5)
         
@@ -116,18 +117,39 @@ class TempMailApp:
         @self.sio.on('connect')
         def on_connect():
             print('已连接到服务器')
-            self.sio.emit('request shortid', True)
+            if self.current_email_prefix:
+                # 如果已有邮箱前缀，则重用它
+                self.sio.emit('set shortid', self.current_email_prefix)
+                # 直接更新UI显示，不等待服务器响应
+                self.email_var.set(f"{self.current_email_prefix}@tempmail.cn")
+            else:
+                # 首次连接才请求新邮箱
+                self.sio.emit('request shortid', True)
             
         @self.sio.on('disconnect')
         def on_disconnect():
             print('与服务器断开连接')
+            self.email_var.set("连接已断开，正在重连...")
+            # 确保socket实例被正确清理
+            try:
+                self.sio.disconnect()
+            except:
+                pass
             
         @self.sio.on('connect_error')
         def on_connect_error(error):
             print(f'连接错误: {error}')
+            self.email_var.set("连接错误，正在重试...")
+            # 确保socket实例被正确清理
+            try:
+                self.sio.disconnect()
+            except:
+                pass
             
         @self.sio.on('shortid')
         def on_shortid(id):
+            if not self.current_email_prefix:  # 只在首次获取时保存
+                self.current_email_prefix = id
             email = f"{id}@tempmail.cn"
             self.email_var.set(email)
             print(f"获取到临时邮箱地址: {email}")
@@ -142,9 +164,9 @@ class TempMailApp:
             # 设置连接选项
             self.sio = socketio.Client(
                 reconnection=True,
-                reconnection_attempts=5,
-                reconnection_delay=1,
-                reconnection_delay_max=5,
+                reconnection_attempts=0,  # 设为0表示无限重试
+                reconnection_delay=1,     # 初始重连延迟1秒
+                reconnection_delay_max=5, # 最大重连延迟5秒
                 logger=True,
                 engineio_logger=True
             )
@@ -159,17 +181,21 @@ class TempMailApp:
             self.sio.connect(
                 'https://tempmail.cn',
                 headers=headers,
-                transports=['websocket', 'polling']
+                transports=['websocket', 'polling']  # 允许降级到polling
             )
         except Exception as e:
             messagebox.showerror("错误", f"连接服务器失败：{str(e)}")
             print(f"详细错误信息: {str(e)}")
+            # 5秒后自动重试连接
+            self.root.after(5000, self.connect_to_server)
 
     def copy_email(self):
         self.root.clipboard_clear()
         self.root.clipboard_append(self.email_var.get())
 
     def get_new_email(self):
+        """刷新邮箱时清除当前邮箱前缀"""
+        self.current_email_prefix = None
         self.sio.emit('request shortid', True)
 
     def copy_code(self, event):
@@ -220,13 +246,24 @@ class TempMailApp:
             pass
         self.root.destroy()
 
-    def reset_machine(self):
+    def set_custom_email(self):
+        """设置自定义邮箱前缀"""
+        custom_prefix = self.custom_entry.get().strip()
+        if not custom_prefix:
+            messagebox.showwarning("警告", "请输入邮箱前缀")
+            return
+            
+        if not re.match(r'^[a-zA-Z0-9_-]+$', custom_prefix):
+            messagebox.showwarning("警告", "邮箱前缀只能包含字母、数字、下划线和横线")
+            return
+            
         try:
-            import ResetMachineCode
-            ResetMachineCode.reset_machine_code()
-            messagebox.showinfo("成功", "机器码重置成功！")
+            self.current_email_prefix = custom_prefix  # 保存自定义邮箱前缀
+            self.sio.emit('set shortid', custom_prefix)
+            self.email_var.set(f"{custom_prefix}@tempmail.cn")
+            messagebox.showinfo("成功", "自定义邮箱设置成功")
         except Exception as e:
-            messagebox.showerror("错误", f"重置机器码失败：{str(e)}")
+            messagebox.showerror("错误", f"设置自定义邮箱失败：{str(e)}")
 
 def extract_verification_code(html_content):
     # 方法2：查找包含"one-time code"附近的6位数字

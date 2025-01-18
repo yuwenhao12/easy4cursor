@@ -3,11 +3,8 @@ import json
 import uuid
 from datetime import datetime
 import shutil
-
-"""
-    请以管理员身份运行 PowerShell，并执行以下命令：
-    python change_machine_id.py
-"""
+import tkinter as tk
+from tkinter import messagebox
 
 # 配置文件路径，适配 Windows 的路径格式
 # storage_file = os.path.expanduser(r"~\AppData\Local\Cursor\User\globalStorage\storage.json")
@@ -67,6 +64,12 @@ def reset_machine_code():
     
     # 更新 JSON 文件
     update_machine_id(storage_file, new_id)
+    
+    # 显示成功提示弹窗
+    root = tk.Tk()
+    root.withdraw()  # 隐藏主窗口
+    messagebox.showinfo("成功", "机器码重置成功！\n新的机器码为：" + new_id)
+    root.destroy()
 
 if __name__ == "__main__":
     reset_machine_code()
